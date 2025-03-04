@@ -1,4 +1,5 @@
 use binwalk::{AnalysisResults, Binwalk};
+use tempdir::TempDir;
 
 /// Convenience function for running an integration test against the specified file, with the provided signature filter.
 /// Assumes that there will be one signature result and one extraction result at file offset 0.
@@ -47,18 +48,18 @@ pub fn run_binwalk(signature_filter: &str, file_name: &str) -> AnalysisResults {
         .to_string();
 
     // Build the path to the output directory
-    let output_directory = std::path::Path::new("tests")
-        .join("binwalk_integration_test_extractions")
-        .display()
-        .to_string();
+    let output_directory = TempDir::new("binwalk-extraction")
+        .expect("Could not create tempdir this could be a bug in upstream");
 
-    // Delete the output directory, if it exists
-    let _ = std::fs::remove_dir_all(&output_directory);
+    let output_directory_path = output_directory.path()
+        .to_str()
+        .expect("Path is not a UTF-8 string? Are we running on a weird file system?")
+        .to_string();
 
     // Configure binwalk
     let binwalker = Binwalk::configure(
         Some(file_path),
-        Some(output_directory.clone()),
+        Some(output_directory_path.clone()),
         Some(vec![signature_filter.to_string()]),
         None,
         None,
@@ -69,8 +70,7 @@ pub fn run_binwalk(signature_filter: &str, file_name: &str) -> AnalysisResults {
     // Run analysis
     let results = binwalker.analyze(&binwalker.base_target_file, true);
 
-    // Clean up the output directory
-    let _ = std::fs::remove_dir_all(output_directory);
+    drop(output_directory);
 
     results
 }

@@ -44,5 +44,8 @@ features = [
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]
 
+[dev-dependencies]
+tempdir = "0.3.7"
+
 [profile.release]
 lto = true
